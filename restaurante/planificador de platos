@@ -1,0 +1,80 @@
+RESTAURANTE - MODULO PLANIFICADOR DE PLATOS
+
+1-El restaurante tendra una variable global "lista de pedidos"
+
+2-Cada pedido se modela como una estructura que contiene los campos:
+    2.1-id_pedido
+    2.2-lista_platos
+    2.3-estado_pedido //enum: confirmado,finalizado,etc
+
+3-A su vez, cada plato perteneciente a un pedido tambien sera modelado como 
+una estructura con los campos:
+    3.1-id_pedido
+    3.2-afinidad //nombre del plato
+    3.3-lista_operaciones //enum?
+    3.4-estado_plato //enum: pendiente,en proceso,finalizado
+
+4-Dentro de un loop, se verificara si existen pedidos confirmados con
+platos pendientes. De ser asi, se mandara a procesar el plato:
+
+while(1){
+    if(lista_pedidos.any(pedido->pedido.estado==confirmado)){
+       if(pedido.lista_platos.any(plato->plato.estado_plato==pendiente)){
+           procesar(plato);
+       }
+       else if(pedido.lista_platos.all(plato->plato.estado==finalizado)){
+           finalizar(pedido);
+       }
+    }
+}
+
+5-La funcion procesar(plato) primero pasa el plato a la cola de ready (de
+ser posible), luego ejecuta en orden cada operacion del plato y por ultimo
+lleva al plato al estado finalizado (cola exit):
+
+void procesar(plato){
+    pasar_a_ready(plato);
+    plato.lista_operaciones.forEach(operacion->ejecutar(operacion,plato));
+    finalizar(plato);
+}
+
+6-La funcion pasar_a_ready(plato) verifica si hay colas de la afinidad
+del plato especifico que no esten llenas, y agrega el plato a esa cola.
+Si no hay colas de la afinidad especifica o estan todas llenas, envia
+el plato a una cola SIN AFINIDAD que no este llena:
+
+void pasar_a_ready(plato){
+    //colas_ready es otra var global que contiene todas las colas del resto
+    if(colas_ready.any(cola->cola.afinidad==plato.afinidad
+    && !esta_llena(cola))){
+        cola.add(plato);
+    }
+    else if(colas_ready.any(cola->cola.afinidad==NULL
+    && !esta_llena(cola))){
+        cola.add(plato);
+    }
+    else{
+        printf("No hay colas disponibles. Intentar mas tarde");
+        EXIT;
+    }
+}
+
+7-La funcion ejecutar(operacion,plato) se encarga de ejecutar la operacion
+especifica del plato segun el algoritmo de planificacion del restaurante:
+
+void ejecutar(operacion,plato){
+    if(operacion.accion=HORNEAR){
+        hornear(plato,operacion.ciclos_cpu); //dentro de esta funcion 
+        //estara el algoritmo correspondiente
+    }
+    else if(operacion==TROCEAR){
+        trocear(plato,operacion.ciclos_cpu);
+    }
+}
+
+A su vez cada operacion puede modelarse como una estructura que tiene 
+dos campos: accion (hornear,trocear,etc) y los ciclos de cpu necesarios.
+
+8-La funcion finalizar(plato) se encarga de agregar el plato a la cola 
+de exit del sistema, previamente verificando que se haya eliminado el plato
+de las otras colas, y cambia su estado a finalizado.
